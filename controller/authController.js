@@ -17,13 +17,28 @@ import { decryptPassword, encryptPassword } from "../Utils/cryptoEncrypt.js";
 import { genrateToken } from "../Utils/genrateToken.js";
 
 export const registerUser = expressAsyncHandler(async (req, res) => {
-  const userExist = await User.findOne({ email: req.body.email });
+  const v = new Validator(req.body, {
+    firstName: "required|string",
+    lastName: "string",
+    email: "string|email|required",
+    dateOfBirth: "string|required",
+    gender: "string|required",
+    password: "string|required",
+  });
+  const value = JSON.parse(JSON.stringify(v));
+  const errorResponse = await checkValidation(v);
+  if (errorResponse) {
+    return failed(res, errorResponse);
+  }
+  const userExist = await User.findOne({ email: value.inputs.email });
   if (!userExist) {
     const user = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      password: encryptPassword(req.body.password),
+      firstName: value.inputs.firstName,
+      lastName: value.inputs.lastName,
+      email: value.inputs.email,
+      dateOfBirth: value.inputs.dateOfBirth,
+      gender: value.inputs.gender,
+      password: encryptPassword(value.inputs.password),
     };
     if (user) {
       const createdUser = await User.create(user);
@@ -38,6 +53,15 @@ export const registerUser = expressAsyncHandler(async (req, res) => {
 });
 
 export const loginUser = expressAsyncHandler(async (req, res) => {
+  const v = new Validator(req.body, {
+    email: "email|required|string",
+    password: "required|string",
+  });
+  const value = JSON.parse(JSON.stringify(v));
+  const errorResponse = await checkValidation(v);
+  if (errorResponse) {
+    return failed(res, errorResponse);
+  }
   const userExist = await User.findOne({ email: req.body.email });
   if (!userExist) {
     return failed(res, "User not found");
@@ -110,6 +134,8 @@ export const updateUser = expressAsyncHandler(async (req, res) => {
         firstName: "string",
         lastName: "string",
         email: "string|email",
+        dateOfBirth: "string",
+        gender: "string",
       });
       const values = JSON.parse(JSON.stringify(v));
       const errorResponse = await checkValidation(v);
@@ -120,11 +146,15 @@ export const updateUser = expressAsyncHandler(async (req, res) => {
       user.firstName = values.inputs.firstName || user.firstName;
       user.lastName = values.inputs.lastName || user.lastName;
       user.email = values.inputs.email || user.email;
+      user.gender = values.inputs.gender || user.gender;
+      user.dateOfBirth = values.inputs.dateOfBirth || user.dateOfBirth;
       const result = await user.save();
       return success(res, "Updated Successfully", {
         firstName: result.firstName,
         lastName: result.lastName,
         email: result.email,
+        gender: result.gender,
+        dateOfBirth: result.dateOfBirth,
       });
     } catch (err) {
       res.status(400).json(res, err.message);

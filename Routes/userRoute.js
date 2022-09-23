@@ -16,12 +16,7 @@ import {
 
 const userRoute = express.Router();
 //Api for Create a new User
-userRoute.post(
-  "/createUser",
-  checkPublishAndSecretKey,
-  authMiddleware,
-  registerUser
-);
+userRoute.post("/createUser", checkPublishAndSecretKey, registerUser);
 //Get All users
 userRoute
   .route("/getUsers")
